@@ -21,4 +21,5 @@ Spacebar: Play/Pause
 Up / Down Arrows: Volume control
 
 Left / Right Arrows: Seek 5 seconds backward/forward
+
 Some Easter eggs contained, maybe try the Konami code.
