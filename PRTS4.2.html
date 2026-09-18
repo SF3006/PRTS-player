@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PRTS // AUDIO_SUBSTRATE</title>
+    <style>
+        body { 
+            background-color: #0b0e11; 
+            background-image: linear-gradient(rgba(18, 24, 30, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(18, 24, 30, 0.4) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #d0d7de; 
+            font-family: 'Courier New', Courier, monospace; 
+            text-align: center; 
+            padding-top: 40px; 
+            padding-bottom: 40px;
+            letter-spacing: 1px;
+            user-select: none;
+            overflow-x: hidden;
+            overflow-y: auto;
+            min-height: 100vh;
+            margin: 0;
+            box-sizing: border-box;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        h2 {
+            font-size: 18px;
+            text-transform: uppercase;
+            color: #00f0ff;
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 2;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+        .system-status {
+            font-size: 11px;
+            color: #6a737d;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        /* PRTS Diamond Deco Components */
+        .deco-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 25px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+        .line-wing {
+            height: 1px;
+            background: #21262d;
+            width: 80px;
+        }
+        .prts-diamond {
+            width: 8px;
+            height: 8px;
+            background: transparent;
+            border: 1px solid #21262d;
+            transform: rotate(45deg);
+            position: relative;
+            box-sizing: border-box;
+            display: inline-block;
+        }
+        .prts-diamond.active-glow {
+            border-color: #00f0ff;
+            background: rgba(0, 240, 255, 0.1);
+            box-shadow: 0 0 5px rgba(0, 240, 255, 0.4);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        /* Background Scaling Diamonds */
+        .prts-diamond.active-glow::after,
+        .prts-diamond.active-glow::before {
+            content: "";
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border: 1px solid #00f0ff;
+            box-sizing: content-box;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .prts-diamond.active-glow::after {
+            animation: prtsRipple 3.5s infinite ease-out;
+        }
+        .prts-diamond.active-glow::before {
+            animation: prtsRipple 3.5s infinite ease-out 1.75s;
+        }
+        @keyframes prtsRipple {
+            0% { 
+                transform: scale(1); 
+                opacity: 0.6; 
+                border-color: inherit; 
+            }
+            100% { 
+                transform: scale(35);
+                opacity: 0; 
+                border-color: rgba(0, 240, 255, 0.1); 
+            }
+        }
+
+        .player-bridge {
+            width: 85%;
+            max-width: 550px;
+            margin: 0 auto 20px auto;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-left: 4px solid #30363d;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            z-index: 2;
+        }
+        .timeline-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .progress-bar {
+            flex-grow: 1;
+            height: 4px;
+            background: #21262d;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #00f0ff;
+            width: 0%;
+            box-shadow: 0 0 4px rgba(0, 240, 255, 0.5);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .volume-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            font-size: 11px;
+            color: #6a737d;
+        }
+        .vol-btn {
+            cursor: pointer;
+            user-select: none;
+        }
+        .vol-btn:hover {
+            color: #00f0ff;
+        }
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 3px;
+            background: #21262d;
+            outline: none;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 6px;
+            height: 12px;
+            background: #00f0ff;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .controls { 
+            display: flex; 
+            justify-content: center; 
+            gap: 15px; 
+            align-items: center; 
+            position: relative;
+            z-index: 2;
+        }
+        button { 
+            background: #161b22; 
+            border: 1px solid #30363d; 
+            color: #acb6c2; 
+            padding: 10px 20px; 
+            font-size: 13px; 
+            cursor: pointer; 
+            border-radius: 0px; 
+            font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+        button:hover { 
+            background: #21262d; 
+            border-color: #8b949e;
+            color: #fff;
+        }
+        button.active { 
+            background: rgba(0, 240, 255, 0.1); 
+            border-color: #00f0ff;
+            color: #00f0ff;
+            text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+        }
+        #browseBtn {
+            border: 1px solid #00f0ff;
+            color: #00f0ff;
+            background: transparent;
+            position: relative;
+            z-index: 2;
+        }
+        #browseBtn:hover {
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        /* Safety Guard Wrapper for Mode Change Button */
+        .mode-guard-wrapper {
+            position: relative;
+            display: inline-block;
+            overflow: hidden;
+            vertical-align: middle;
+        }
+
+        /* Horizontal Sliding Safety Cover Overlay */
+        .mode-guard-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #21262d;
+            border: 1px dashed #ff0055;
+            box-sizing: border-box;
+            color: #ff0055;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 3;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+        }
+
+        /* Horizontal Slide class triggered on Click */
+        .mode-guard-cover.open {
+            transform: translateX(102%);
+            pointer-events: none;
+        }
+
+        /* Search Bar Components */
+        .search-container {
+            width: 85%;
+            max-width: 550px;
+            margin: 20px auto 0 auto;
+            display: flex;
+            align-items: center;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-bottom: none;
+            padding: 6px 12px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 2;
+        }
+        .search-label {
+            font-size: 11px;
+            color: #00f0ff;
+            margin-right: 8px;
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+        }
+        #searchInput {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+        }
+        #searchInput::placeholder {
+            color: #484f58;
+        }
+        .clear-search-btn {
+            font-size: 10px;
+            color: #6a737d;
+            cursor: pointer;
+            padding-left: 5px;
+        }
+        .clear-search-btn:hover {
+            color: #ff0055;
+        }
+
+        #playlist { 
+            margin-top: 0; 
+            list-style-type: none; 
+            padding: 0; 
+            max-height: 220px; 
+            overflow-y: auto; 
+            display: inline-block; 
+            text-align: left; 
+            width: 85%; 
+            max-width: 550px; 
+            background: #0d1117; 
+            border: 1px solid #21262d; 
+            position: relative;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+        #playlist::-webkit-scrollbar { width: 6px; }
+        #playlist::-webkit-scrollbar-track { background: #0d1117; }
+        #playlist::-webkit-scrollbar-thumb { background: #30363d; }
+        
+        li { 
+            padding: 12px; 
+            border-bottom: 1px solid #161b22; 
+            cursor: grab; 
+            font-size: 13px; 
+            text-overflow: ellipsis; 
+            overflow: hidden; 
+            white-space: nowrap; 
+            color: #8b949e;
+            transition: background 0.15s ease, border-color 0.15s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li:hover { 
+            background: #161b22; 
+            color: #fff;
+        }
+        li.playing { 
+            background: rgba(255, 255, 255, 0.05); 
+            color: #00f0ff; 
+            font-weight: bold;
+            border-left: 3px solid #00f0ff;
+            padding-left: 9px;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+        li.queued {
+            border-left: 3px solid #e3b341;
+        }
+        
+        /* Top of Queue Button */
+        .queue-btn {
+            background: transparent;
+            border: 1px solid #30363d;
+            color: #6a737d;
+            font-size: 10px;
+            padding: 2px 6px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+        li:hover .queue-btn {
+            opacity: 1;
+        }
+        .queue-btn:hover {
+            border-color: #00f0ff;
+            color: #00f0ff;
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        /* Drag-and-Drop Visual Indicators */
+        li.dragging {
+            opacity: 0.3;
+            background: #21262d;
+        }
+        li.drag-over {
+            border-top: 2px solid #00f0ff;
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        #nowPlaying { 
+            margin-top: 20px; 
+            color: #ffffff; 
+            font-size: 14px;
+            min-height: 24px; 
+            text-transform: uppercase;
+            border-bottom: 1px dashed #21262d;
+            display: inline-block;
+            padding-bottom: 10px;
+            width: 80%;
+            max-width: 500px;
+            position: relative;
+            z-index: 2;
+        }
+        .priestess-quote {
+            font-size: 10px; 
+            color: rgba(106, 115, 125, 0.35); 
+            margin-top: 15px; 
+            letter-spacing: 2px; 
+            position: relative; 
+            z-index: 2;
+            text-transform: lowercase;
+            transition: color 0.3s ease;
+        }
+
+        /* Babel Crimson Override Mode */
+        body.babel-mode h2 {
+            color: #ff0055 !important;
+            text-shadow: 0 0 8px rgba(255, 0, 85, 0.5) !important;
+        }
+        body.babel-mode .search-label,
+        body.babel-mode li.playing,
+        body.babel-mode button.active,
+        body.babel-mode #browseBtn {
+            color: #ff0055 !important;
+            border-color: #ff0055 !important;
+        }
+        body.babel-mode button.active {
+            background: rgba(255, 0, 85, 0.1) !important;
+            text-shadow: 0 0 5px rgba(255, 0, 85, 0.5) !important;
+        }
+        body.babel-mode .progress-fill,
+        body.babel-mode .volume-slider::-webkit-slider-thumb {
+            background: #ff0055 !important;
+            box-shadow: 0 0 6px rgba(255, 0, 85, 0.8) !important;
+        }
+        body.babel-mode .prts-diamond.active-glow {
+            border-color: #ff0055 !important;
+            background: rgba(255, 0, 85, 0.1) !important;
+            box-shadow: 0 0 5px rgba(255, 0, 85, 0.4) !important;
+        }
+    </style>
+</head>
+<body>
+    <h2 id="mainHeader">INITIALIZING SYSTEM...</h2>
+    <div class="system-status">BOOT SEQUENCE STARTED</div>
+    
+    <!-- Visual Diamond Arrays -->
+    <div class="deco-bar">
+        <div class="line-wing"></div>
+        <div class="prts-diamond"></div>
+        <div class="prts-diamond active-glow"></div>
+        <div class="prts-diamond"></div>
+        <div class="line-wing"></div>
+    </div>
+    
+    <input type="file" id="musicPicker" multiple accept="audio/*" style="display:none;" onclick="this.value=null;">
+    <button id="browseBtn" onclick="document.getElementById('musicPicker').click()">Browse Directory</button>
+    <br><br>
+    
+    <audio id="audioPlayer" style="display:none;"></audio>
+    
+    <div class="player-bridge">
+        <div class="timeline-container">
+            <span id="timeCurrent">0:00</span>
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="timeTotal">0:00</span>
+        </div>
+        <div class="volume-container">
+            <span class="vol-btn" onclick="toggleMute()">VOL</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="0.7">
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="playPrev()">&lt;&lt; Prev</button>
+        <button id="playBtn" onclick="togglePlay()">Play</button>
+        <button onclick="playNext()">Next &gt;&gt;</button>
+        
+        <!-- Guarded Mode Switch Button with Delayed Close Horizontal Cover -->
+        <div class="mode-guard-wrapper" onmouseleave="startGuardTimer()" onmouseenter="clearGuardTimer()">
+            <div id="modeGuardCover" class="mode-guard-cover" onclick="openModeGuard()">[LOCKED]</div>
+            <button id="modeBtn" class="active" onclick="cycleMode()">[SHUFFLE]</button>
+        </div>
+    </div>
+    
+    <div id="nowPlaying">Awaiting Substrate Initialization...</div>
+    <br>
+
+    <!-- Search Input with Clear Button -->
+    <div class="search-container">
+        <span class="search-label">SEARCH //</span>
+        <input type="text" id="searchInput" placeholder="Filter queue..." oninput="buildPlaylist()">
+        <span class="clear-search-btn" onclick="searchInput.value=''; buildPlaylist();">[X]</span>
+    </div>
+    
+    <ul id="playlist"></ul>
+    
+    <!-- Hidden Priestess Easter Egg Quote -->
+    <div class="priestess-quote">// "even if the stars fall, our path will cross again."</div>
+
+    <script>
+        let rawTracks = [];
+        let tracks = [];
+        let queuedTracks = []; 
+        let lastToppedIndex = 0;
+        let currentIndex = 0;
+        let draggedIndex = null;
+        let guardTimer = null;
+        let previousVolume = 0.7;
+        let statusClicks = 0;
+        let idleTimer = null;
+        let bootFinished = false;
+        
+        // Playback Modes: 0 = Sequential, 1 = Repeat Single, 2 = Shuffle
+        let playMode = 2; // Defaults to Shuffle
+        const modeLabels = ["[SEQ]", "[REPEAT 1]", "[SHUFFLE]"];
+
+        const player = document.getElementById('audioPlayer');
+        const picker = document.getElementById('musicPicker');
+        const modeBtn = document.getElementById('modeBtn');
+        const playBtn = document.getElementById('playBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const timeCurrent = document.getElementById('timeCurrent');
+        const timeTotal = document.getElementById('timeTotal');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const searchInput = document.getElementById('searchInput');
+        const modeGuardCover = document.getElementById('modeGuardCover');
+        const statusEl = document.querySelector('.system-status');
+        const mainHeader = document.getElementById('mainHeader');
+
+        // Match initial text on start
+        modeBtn.textContent = modeLabels[playMode];
+
+        // --- Fast Terminal Boot Decoding Animation ---
+        function runTerminalBoot() {
+            const finalHeader = "PRTS // AUDIO_SUBSTRATE";
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_//";
+            let step = 0;
+            
+            // Accelerated Stage Message Timings
+            const bootStages = [
+                { time: 0, text: "INITIALIZING SUBSTRATE HARDWARE..." },
+                { time: 250, text: "AUTHENTICATING OPERATOR: DOCTOR..." },
+                { time: 550, text: "LOADING LOCAL CACHE DRIVERS..." }
+            ];
+
+            bootStages.forEach(stage => {
+                setTimeout(() => {
+                    if (!bootFinished) statusEl.textContent = stage.text;
+                }, stage.time);
+            });
+
+            // Fast decode over ~1.1 seconds
+            const bootInterval = setInterval(() => {
+                let scrambled = finalHeader.split('').map((char, i) => {
+                    if (char === ' ' || char === '/') return char;
+                    if (i < Math.floor(step)) return finalHeader[i];
+                    return chars[Math.floor(Math.random() * chars.length)];
+                }).join('');
+
+                mainHeader.textContent = scrambled;
+                step += 1;
+
+                if (step >= finalHeader.length) {
+                    clearInterval(bootInterval);
+                    mainHeader.textContent = finalHeader;
+                    statusEl.textContent = "System Status: Nominal // Offline Cache Mode";
+                    bootFinished = true;
+                }
+            }, 45);
+        }
+        window.addEventListener('load', runTerminalBoot);
+
+        function openModeGuard() {
+            clearGuardTimer();
+            modeGuardCover.classList.add('open');
+        }
+
+        function startGuardTimer() {
+            guardTimer = setTimeout(() => {
+                modeGuardCover.classList.remove('open');
+            }, 300);
+        }
+
+        function clearGuardTimer() {
+            if (guardTimer) {
+                clearTimeout(guardTimer);
+                guardTimer = null;
+            }
+        }
+
+        function updateVolumeStatus(val) {
+            if (!bootFinished) return;
+            if (val >= 0.95) {
+                statusEl.textContent = "WARNING: SIGNAL AMPLITUDE EXCEEDS SUBSTRATE TOLERANCE";
+                statusEl.style.color = "#ff0055";
+            } else {
+                statusEl.textContent = "System Status: Nominal // Offline Cache Mode";
+                statusEl.style.color = "#6a737d";
+            }
+        }
+
+        function toggleMute() {
+            if (player.volume > 0) {
+                previousVolume = player.volume;
+                player.volume = 0;
+                volumeSlider.value = 0;
+            } else {
+                player.volume = previousVolume || 0.7;
+                volumeSlider.value = player.volume;
+            }
+            updateVolumeStatus(player.volume);
+        }
+
+        picker.addEventListener('change', (e) => {
+            const selectedFiles = Array.from(e.target.files);
+            if (selectedFiles.length === 0) return;
+            
+            rawTracks = selectedFiles.sort((a, b) => a.name.localeCompare(b.name));
+            queuedTracks = [];
+            lastToppedIndex = 0;
+            applyPlayMode();
+            playTrack(0);
+        });
+
+        player.addEventListener('timeupdate', () => {
+            if (!player.duration) return;
+            const pct = (player.currentTime / player.duration) * 100;
+            progressFill.style.width = pct + '%';
+            timeCurrent.textContent = formatTime(player.currentTime);
+        });
+
+        player.addEventListener('loadedmetadata', () => {
+            timeTotal.textContent = formatTime(player.duration);
+        });
+
+        player.addEventListener('ended', () => { 
+            if (playMode === 1) {
+                player.currentTime = 0;
+                player.play();
+            } else {
+                playNext();
+            }
+        });
+        
+        player.addEventListener('play', () => { 
+            playBtn.textContent = "Pause"; 
+            playBtn.className = "active"; 
+            if (tracks[currentIndex]) {
+                document.title = "PRTS // " + cleanName(tracks[currentIndex].name);
+            }
+            resetIdleTimer();
+        });
+
+        player.addEventListener('pause', () => { 
+            playBtn.textContent = "Play"; 
+            playBtn.className = ""; 
+            document.title = "PRTS // AUDIO_SUBSTRATE";
+            resetIdleTimer();
+        });
+
+        progressBar.addEventListener('click', (e) => {
+            if (!player.duration) return;
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const pct = clickX / rect.width;
+            player.currentTime = pct * player.duration;
+        });
+
+        volumeSlider.addEventListener('input', (e) => { 
+            player.volume = e.target.value; 
+            updateVolumeStatus(player.volume);
+        });
+        player.volume = volumeSlider.value;
+
+        window.addEventListener('keydown', (e) => {
+            resetIdleTimer();
+            if (tracks.length === 0) return;
+            if (document.activeElement === searchInput) return;
+            
+            if (e.key === ' ') { 
+                e.preventDefault(); 
+                togglePlay(); 
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                player.volume = Math.min(1, player.volume + 0.05);
+                volumeSlider.value = player.volume;
+                updateVolumeStatus(player.volume);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                player.volume = Math.max(0, player.volume - 0.05);
+                volumeSlider.value = player.volume;
+                updateVolumeStatus(player.volume);
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                player.currentTime = Math.max(0, player.currentTime - 5);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                player.currentTime = Math.min(player.duration || 0, player.currentTime + 5);
+            }
+        });
+
+        function formatTime(secs) {
+            const m = Math.floor(secs / 60);
+            const s = Math.floor(secs % 60);
+            return m + ":" + (s < 10 ? '0' : '') + s;
+        }
+
+        function togglePlay() {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+
+        function cleanName(name) {
+            return name.replace(/_spotdown\.org\.(mp3|m4a|wav|ogg)/gi, '').replace(/\.(mp3|m4a|wav|ogg)/gi, '');
+        }
+
+        function buildPlaylist() {
+            const list = document.getElementById('playlist');
+            list.innerHTML = '';
+            const query = searchInput.value.toLowerCase().trim();
+
+            tracks.forEach((track, index) => {
+                const title = cleanName(track.name);
+                
+                if (query && !title.toLowerCase().includes(query)) return;
+
+                const li = document.createElement('li');
+                li.id = "track-" + index;
+                li.draggable = true;
+                
+                if (index === currentIndex) {
+                    li.className = 'playing';
+                } else if (queuedTracks.includes(track)) {
+                    li.className = 'queued';
+                }
+
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = "≡ [" + String(index + 1).padStart(3, '0') + "] " + title;
+                titleSpan.style.textOverflow = "ellipsis";
+                titleSpan.style.overflow = "hidden";
+                titleSpan.style.whiteSpace = "nowrap";
+
+                li.onclick = (e) => {
+                    if (e.target.classList.contains('queue-btn')) return;
+                    playTrack(index);
+                };
+
+                const topBtn = document.createElement('button');
+                topBtn.className = 'queue-btn';
+                topBtn.textContent = '[TOP]';
+                topBtn.title = 'Play Next';
+                topBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    moveToTopNext(index);
+                };
+
+                li.appendChild(titleSpan);
+                li.appendChild(topBtn);
+
+                li.addEventListener('dragstart', (e) => {
+                    draggedIndex = index;
+                    li.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                li.addEventListener('dragend', () => {
+                    li.classList.remove('dragging');
+                    document.querySelectorAll('#playlist li').forEach(el => el.classList.remove('drag-over'));
+                });
+
+                li.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    li.classList.add('drag-over');
+                });
+
+                li.addEventListener('dragleave', () => {
+                    li.classList.remove('drag-over');
+                });
+
+                li.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    li.classList.remove('drag-over');
+                    if (draggedIndex === null || draggedIndex === index) return;
+
+                    const playingTrack = tracks[currentIndex];
+
+                    const [movedItem] = tracks.splice(draggedIndex, 1);
+                    tracks.splice(index, 0, movedItem);
+
+                    currentIndex = tracks.indexOf(playingTrack);
+
+                    buildPlaylist();
+                });
+
+                list.appendChild(li);
+            });
+        }
+
+        function moveToTopNext(index) {
+            if (index === currentIndex) return;
+
+            const playingTrack = tracks[currentIndex];
+            const [movedItem] = tracks.splice(index, 1);
+            
+            if (!queuedTracks.includes(movedItem)) {
+                queuedTracks.push(movedItem);
+            }
+
+            let targetPos = currentIndex + 1;
+            if (lastToppedIndex > currentIndex) {
+                targetPos = lastToppedIndex + 1;
+            }
+
+            if (targetPos > tracks.length) targetPos = tracks.length;
+
+            tracks.splice(targetPos, 0, movedItem);
+            lastToppedIndex = targetPos;
+
+            currentIndex = tracks.indexOf(playingTrack);
+            
+            searchInput.value = '';
+            buildPlaylist();
+            
+            const movedElement = document.getElementById("track-" + targetPos);
+            if (movedElement) {
+                movedElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
+        }
+
+        function playTrack(index) {
+            if (index >= tracks.length || index < 0) return;
+            currentIndex = index;
+            const track = tracks[currentIndex];
+            
+            const qIdx = queuedTracks.indexOf(track);
+            if (qIdx > -1) queuedTracks.splice(qIdx, 1);
+
+            player.src = URL.createObjectURL(track);
+            const title = cleanName(track.name);
+            document.getElementById('nowPlaying').textContent = "Now Playing // " + title;
+            document.title = "PRTS // " + title;
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: title,
+                    artist: 'PRTS Audio Substrate',
+                    album: 'Rhodes Island Offline Cache'
+                });
+            }
+            
+            buildPlaylist();
+            
+            const newTrack = document.getElementById("track-" + currentIndex);
+            if (newTrack) {
+                newTrack.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
+            player.play();
+        }
+
+        function playNext() {
+            if (currentIndex + 1 < tracks.length) playTrack(currentIndex + 1);
+            else playTrack(0);
+        }
+
+        function playPrev() {
+            if (currentIndex - 1 >= 0) playTrack(currentIndex - 1);
+            else playTrack(tracks.length - 1);
+        }
+
+        function cycleMode() {
+            playMode = (playMode + 1) % 3;
+            modeBtn.textContent = modeLabels[playMode];
+            if (rawTracks.length > 0) {
+                applyPlayMode();
+            }
+        }
+
+        function applyPlayMode() {
+            const currentTrack = tracks[currentIndex];
+            
+            let protectedTracks = [];
+            if (currentTrack) protectedTracks.push(currentTrack);
+            
+            queuedTracks.forEach(t => {
+                if (t !== currentTrack && !protectedTracks.includes(t)) {
+                    protectedTracks.push(t);
+                }
+            });
+
+            if (playMode === 2) {
+                let unqueued = rawTracks.filter(t => !protectedTracks.includes(t));
+                shuffleArray(unqueued);
+                tracks = [...protectedTracks, ...unqueued];
+                currentIndex = 0;
+            } else {
+                let unqueued = rawTracks.filter(t => !protectedTracks.includes(t));
+                tracks = [...protectedTracks, ...unqueued];
+                currentIndex = 0;
+            }
+            
+            buildPlaylist();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        statusEl.addEventListener('click', () => {
+            statusClicks++;
+            if (statusClicks >= 5) {
+                statusEl.textContent = "[CLOSURE_NET] // ACCESS DENIED: LMD INSUFFICIENT";
+                statusEl.style.color = "#e3b341";
+                setTimeout(() => {
+                    statusClicks = 0;
+                    updateVolumeStatus(player.volume);
+                }, 3500);
+            }
+        });
+
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                if (player.paused && tracks.length > 0 && bootFinished) {
+                    statusEl.textContent = 'SYSTEM IDLE // "DOCTOR, THERE IS STILL MUCH WORK TO BE DONE."';
+                    statusEl.style.color = "#00f0ff";
+                }
+            }, 180000);
+        }
+        window.addEventListener('mousemove', resetIdleTimer);
+
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => { player.play(); });
+            navigator.mediaSession.setActionHandler('pause', () => { player.pause(); });
+            navigator.mediaSession.setActionHandler('previoustrack', () => { playPrev(); });
+            navigator.mediaSession.setActionHandler('nexttrack', () => { playNext(); });
+            navigator.mediaSession.setActionHandler('seekto', (details) => {
+                if (details.fastSeek && ('fastSeek' in player)) {
+                    player.fastSeek(details.seekTime);
+                } else {
+                    player.currentTime = details.seekTime;
+                }
+            });
+        }
+
+        const konamiCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+        let konamiIndex = 0;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    triggerBabelOverride();
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        });
+
+        function triggerBabelOverride() {
+            document.body.classList.toggle('babel-mode');
+            const quote = document.querySelector('.priestess-quote');
+            
+            if (document.body.classList.contains('babel-mode')) {
+                mainHeader.textContent = "BABEL // ARCHIVE_RESTRICTED";
+                quote.textContent = '// "doctor... please remember us."';
+            } else {
+                mainHeader.textContent = "PRTS // AUDIO_SUBSTRATE";
+                quote.textContent = '// "even if the stars fall, our path will cross again."';
+            }
+        }
+    </script>
+</body>
+</html>
